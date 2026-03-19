@@ -2,6 +2,8 @@ package com.m2sdl.dop.projet;
 
 import android.app.Activity;
 import android.os.Bundle;
+import android.view.Window;
+import android.view.WindowManager;
 
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
@@ -14,6 +16,12 @@ public class MainActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         WindowCompat.enableEdgeToEdge(getWindow());
+
+        getWindow().setFlags(
+                WindowManager.LayoutParams.FLAG_FULLSCREEN,
+                WindowManager.LayoutParams.FLAG_FULLSCREEN);
+        this.requestWindowFeature(Window.FEATURE_NO_TITLE);
+
         setContentView(R.layout.activity_main);
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
