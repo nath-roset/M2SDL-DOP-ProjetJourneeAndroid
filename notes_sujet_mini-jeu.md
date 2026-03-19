@@ -3,3 +3,6 @@ changer `AppCompatActivity` -> `Activity` : enlève la compatibilité avec les a
 
 # 3
 Hides all screen decorations (such as the status bar) while this window is displayed
+
+# 18
+absolument rien n'est fait actuellement
