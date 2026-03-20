@@ -42,26 +42,50 @@ public class TraiteurTableauBlanc {
         Imgproc.morphologyEx(masque, masque, Imgproc.MORPH_CLOSE, noyau);
         Imgproc.morphologyEx(masque, masque, Imgproc.MORPH_DILATE, noyau);
 
-        // 5. Détection des contours
+        // 5. Détection des contours - RETR_LIST au lieu de RETR_EXTERNAL
         List<MatOfPoint> contours = new ArrayList<>();
         Imgproc.findContours(masque, contours,
-                new Mat(), Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_SIMPLE);
+                new Mat(), Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_SIMPLE);
 
-        // 6. Mise à l'échelle
+// 6. Mise à l'échelle
         float scaleX = (float) viewWidth  / bitmap.getWidth();
         float scaleY = (float) viewHeight / bitmap.getHeight();
 
-        // 7. BoiteDeColision
+// 7. BoiteDeColision — découpage en segments
         for (MatOfPoint contour : contours) {
-            Rect rect = Imgproc.boundingRect(contour);
-            if (rect.width * rect.height < SURFACE_MIN) continue;
 
-            int left   = (int) (rect.x                 * scaleX);
-            int top    = (int) (rect.y                 * scaleY);
-            int right  = (int) ((rect.x + rect.width)  * scaleX);
-            int bottom = (int) ((rect.y + rect.height) * scaleY);
+            // Ignore les trop petits
+            Rect bBox = Imgproc.boundingRect(contour);
+            if (bBox.width * bBox.height < SURFACE_MIN) continue;
 
-            boites.add(new BoiteDeColision(left, top, right, bottom));
+            // Approximation polygonale : réduit le contour à ses points clés
+            MatOfPoint2f contour2f = new MatOfPoint2f(contour.toArray());
+            MatOfPoint2f approx2f  = new MatOfPoint2f();
+            double epsilon = 0.01 * Imgproc.arcLength(contour2f, true);
+            Imgproc.approxPolyDP(contour2f, approx2f, epsilon, true);
+
+            Point[] points = approx2f.toArray();
+
+            // Crée une boîte fine autour de chaque SEGMENT du polygone
+            int epaisseur = 12; // épaisseur des boîtes en pixels écran
+            for (int i = 0; i < points.length; i++) {
+                Point p1 = points[i];
+                Point p2 = points[(i + 1) % points.length];
+
+                int x1 = (int) (Math.min(p1.x, p2.x) * scaleX);
+                int y1 = (int) (Math.min(p1.y, p2.y) * scaleY);
+                int x2 = (int) (Math.max(p1.x, p2.x) * scaleX);
+                int y2 = (int) (Math.max(p1.y, p2.y) * scaleY);
+
+                // Garantit une épaisseur minimale sur chaque axe
+                if (x2 - x1 < epaisseur) { x1 -= epaisseur/2; x2 += epaisseur/2; }
+                if (y2 - y1 < epaisseur) { y1 -= epaisseur/2; y2 += epaisseur/2; }
+
+                boites.add(new BoiteDeColision(x1, y1, x2, y2));
+            }
+
+            contour2f.release();
+            approx2f.release();
         }
 
         matRgba.release();
