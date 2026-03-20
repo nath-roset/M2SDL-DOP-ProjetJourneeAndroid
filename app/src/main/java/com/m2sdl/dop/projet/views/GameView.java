@@ -100,25 +100,38 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             });
         }).start();
     }
+    private int sw() { return largeurEcran > 0 ? largeurEcran : getWidth(); }
+    private int sh() { return hauteurEcran > 0 ? hauteurEcran : getHeight(); }
 
     private void initBoitesDefaut() {
+
         boites.clear();
-        boites.add(new BoiteDeColision(0,   300,  20,   2200));
-        boites.add(new BoiteDeColision(880, 300,  900,  2200));
-        boites.add(new BoiteDeColision(100, 300,  900,  340));
-        boites.add(new BoiteDeColision(0,   2160, 800,  2200));
-        boites.add(new BoiteDeColision(20,  340,  300,  380));
-        boites.add(new BoiteDeColision(280, 340,  300,  700));
-        boites.add(new BoiteDeColision(20,  700,  450,  740));
-        boites.add(new BoiteDeColision(450, 700,  900,  740));
-        boites.add(new BoiteDeColision(680, 740,  700,  1100));
-        boites.add(new BoiteDeColision(20,  1100, 500,  1140));
-        boites.add(new BoiteDeColision(480, 1140, 500,  1500));
-        boites.add(new BoiteDeColision(500, 1100, 900,  1140));
-        boites.add(new BoiteDeColision(680, 1140, 700,  1500));
-        boites.add(new BoiteDeColision(20,  1500, 680,  1540));
-        boites.add(new BoiteDeColision(680, 1540, 700,  1900));
-        boites.add(new BoiteDeColision(100, 1900, 900,  1940));
+        int w = sw(), h = sh();
+        // Bordures
+        boites.add(new BoiteDeColision(0,        h/8,     w/45,    h));
+        boites.add(new BoiteDeColision(w-w/45,   h/8,     w,       h));
+        boites.add(new BoiteDeColision(w/9,      h/8,     w,       h/8+h/60));
+        boites.add(new BoiteDeColision(0,        h-h/12,  w*8/9,   h));
+
+        // Niveau 1
+        boites.add(new BoiteDeColision(w/45,     h/8+h/60,  w/3,     h/8+h/60+h/22));
+        boites.add(new BoiteDeColision(w/3-w/45, h/8,       w/3,     h*7/20));
+
+        // Niveau 2
+        boites.add(new BoiteDeColision(w/45,     h*7/20,  w/2,     h*7/20+h/22));
+        boites.add(new BoiteDeColision(w/2,      h*7/20,  w-w/45,  h*7/20+h/22));
+        boites.add(new BoiteDeColision(w*3/4,    h*7/20,  w*3/4+w/45, h*55/100));
+
+        // Niveau 3
+        boites.add(new BoiteDeColision(w/45,     h*55/100, w*55/100, h*55/100+h/22));
+        boites.add(new BoiteDeColision(w*53/100, h*55/100, w*55/100, h*75/100));
+        boites.add(new BoiteDeColision(w*55/100, h*55/100, w-w/45,   h*55/100+h/22));
+        boites.add(new BoiteDeColision(w*3/4,    h*55/100, w*3/4+w/45, h*75/100));
+
+        // Niveau 4
+        boites.add(new BoiteDeColision(w/45,     h*75/100, w*3/4,   h*75/100+h/22));
+        boites.add(new BoiteDeColision(w*3/4,    h*75/100, w*3/4+w/45, h*90/100));
+        boites.add(new BoiteDeColision(w/9,      h*90/100, w-w/45,  h*90/100+h/22));
     }
 
     private void initJoueurs(boolean multi) {
@@ -378,36 +391,51 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     }
 
     private void drawBoutonsVictoire(Canvas canvas) {
-        int w  = getWidth();
-        int h  = getHeight();
+        float btnW = sw() * 0.35f;
+        float btnH = sh() * 0.09f;
+        float cx   = sw() / 2f;
+        float yR   = sh() * 0.68f;
+        float yM   = yR + btnH * 1.5f;
+        float r    = btnH * 0.22f;
+
         Paint p = new Paint();
         p.setAntiAlias(true);
         p.setTextAlign(Paint.Align.CENTER);
+        p.setTextSize(sh() * 0.045f);
 
-        float btnW = 400f, btnH = 110f;
-        float cx   = w / 2f;
-        float yR   = h * 0.88f;
-        float yM   = h * 0.88f + 140f;
-
+        p.setStyle(Paint.Style.FILL);
         p.setColor(Color.argb(160, 8, 12, 28));
-        canvas.drawRoundRect(new RectF(cx - btnW/2, yR, cx + btnW/2, yR + btnH), 20, 20, p);
+        canvas.drawRoundRect(new RectF(cx-btnW/2, yR, cx+btnW/2, yR+btnH), r, r, p);
         p.setStyle(Paint.Style.STROKE);
-        p.setStrokeWidth(2f);
+        p.setStrokeWidth(sw() * 0.002f);
         p.setColor(Color.rgb(0, 255, 150));
-        canvas.drawRoundRect(new RectF(cx - btnW/2, yR, cx + btnW/2, yR + btnH), 20, 20, p);
+        canvas.drawRoundRect(new RectF(cx-btnW/2, yR, cx+btnW/2, yR+btnH), r, r, p);
         p.setStyle(Paint.Style.FILL);
         p.setColor(Color.rgb(0, 255, 150));
-        p.setTextSize(56f);
-        canvas.drawText("↺ Rejouer", cx, yR + 74f, p);
+        canvas.drawText("↺ Rejouer", cx, yR + btnH * 0.65f, p);
 
+        p.setStyle(Paint.Style.FILL);
         p.setColor(Color.argb(160, 8, 12, 28));
-        canvas.drawRoundRect(new RectF(cx - btnW/2, yM, cx + btnW/2, yM + btnH), 20, 20, p);
+        canvas.drawRoundRect(new RectF(cx-btnW/2, yM, cx+btnW/2, yM+btnH), r, r, p);
         p.setStyle(Paint.Style.STROKE);
         p.setColor(Color.rgb(255, 100, 100));
-        canvas.drawRoundRect(new RectF(cx - btnW/2, yM, cx + btnW/2, yM + btnH), 20, 20, p);
+        canvas.drawRoundRect(new RectF(cx-btnW/2, yM, cx+btnW/2, yM+btnH), r, r, p);
         p.setStyle(Paint.Style.FILL);
         p.setColor(Color.rgb(255, 100, 100));
-        canvas.drawText("← Menu", cx, yM + 74f, p);
+        canvas.drawText("← Menu", cx, yM + btnH * 0.65f, p);
+    }
+
+    private boolean touchBoutonsVictoire(float tx, float ty, int bouton) {
+        float btnW = sw() * 0.35f;
+        float btnH = sh() * 0.09f;
+        float cx   = sw() / 2f;
+        float yR   = sh() * 0.68f;
+        float yM   = yR + btnH * 1.5f;
+
+        if (bouton == 0)
+            return tx > cx-btnW/2 && tx < cx+btnW/2 && ty > yR && ty < yR+btnH;
+        else
+            return tx > cx-btnW/2 && tx < cx+btnW/2 && ty > yM && ty < yM+btnH;
     }
 
     private void drawBoutonEditeur(Canvas canvas, String label, float x, int couleur) {
@@ -549,23 +577,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             case VICTOIRE:
                 if (animation == null || !animation.estTerminee()) break;
                 if (event.getAction() == MotionEvent.ACTION_UP) {
-                    int w      = getWidth();
-                    int h      = getHeight();
-                    float cx   = w / 2f;
-                    float btnW = 400f, btnH = 110f;
-                    float yR   = h * 0.88f;
-                    float yM   = h * 0.88f + 140f;
-
-                    if (tx > cx - btnW/2 && tx < cx + btnW/2
-                            && ty > yR && ty < yR + btnH) {
-                        rejouer();
-                        return true;
-                    }
-                    if (tx > cx - btnW/2 && tx < cx + btnW/2
-                            && ty > yM && ty < yM + btnH) {
-                        retourMenu();
-                        return true;
-                    }
+                    if (touchBoutonsVictoire(tx, ty, 0)) { rejouer();    return true; }
+                    if (touchBoutonsVictoire(tx, ty, 1)) { retourMenu(); return true; }
                 }
                 break;
         }

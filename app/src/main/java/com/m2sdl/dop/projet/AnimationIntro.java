@@ -14,7 +14,7 @@ public class AnimationIntro {
     private int largeur, hauteur;
     private List<Joueur> joueurs;
     private static final int DUREE_DEBUT  = 20;
-    private static final int DUREE_FIN    = 180;
+    private static final int DUREE_FIN    = 100;
 
     public AnimationIntro(Type type, int largeur, int hauteur, List<Joueur> joueurs) {
         this.type    = type;
