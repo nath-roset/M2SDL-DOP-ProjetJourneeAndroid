@@ -139,6 +139,35 @@ public class Balle {
             collisionObstacles();
         }
     }
+    public void resoudreCollisionAvec(Balle autre) {
+        float dx   = autre.getX() - x;
+        float dy   = autre.getY() - y;
+        float dist = (float) Math.sqrt(dx * dx + dy * dy);
+        float distMin = rayon + autre.rayon;
+
+        if (dist >= distMin || dist == 0) return;
+
+        // Séparer les deux balles
+        float overlap = (distMin - dist) / 2f;
+        float nx = dx / dist;
+        float ny = dy / dist;
+
+        x      -= nx * overlap;
+        y      -= ny * overlap;
+        autre.x += nx * overlap;
+        autre.y += ny * overlap;
+
+        // Échanger les vitesses sur l'axe de collision (rebond élastique)
+        float dvx = autre.deplacement.getDeplacementX() - deplacement.getDeplacementX();
+        float dvy = autre.deplacement.getDeplacementY() - deplacement.getDeplacementY();
+        float dot  = dvx * nx + dvy * ny;
+
+        if (dot > 0) return; // déjà en train de s'éloigner
+
+        float impulse = dot * 0.85f;
+        deplacement.appliquerImpulsion( impulse * nx,  impulse * ny);
+        autre.deplacement.appliquerImpulsion(-impulse * nx, -impulse * ny);
+    }
 
     private float epaisseurMinBoites() {
         float min = rayon;
@@ -151,20 +180,34 @@ public class Balle {
     }
 
     private void collisionObstacles() {
+        boolean rebondiX = false;
+        boolean rebondiY = false;
+
         for (BoiteDeColision b : boites) {
             float plusProcheX = Math.max(b.getBordGauche(), Math.min(x, b.getBordDroit()));
             float plusProcheY = Math.max(b.getBordHaut(),   Math.min(y, b.getBordBas()));
+
             float dx = x - plusProcheX;
             float dy = y - plusProcheY;
             float d2 = dx * dx + dy * dy;
+
             if (d2 > rayon * rayon) continue;
-            float dist = (float) Math.sqrt(d2);
-            if (dist == 0) continue;
-            float penetration = rayon - dist;
-            x += (dx / dist) * penetration;
-            y += (dy / dist) * penetration;
-            if (Math.abs(dx) > Math.abs(dy)) deplacement.toucherMur();
-            else                              deplacement.toucherPlafond();
+
+            float distance = (float) Math.sqrt(d2);
+            if (distance == 0) continue;
+
+            float penetration = rayon - distance;
+            x += (dx / distance) * penetration;
+            y += (dy / distance) * penetration;
+
+            boolean collisionHorizontale = Math.abs(dx) > Math.abs(dy);
+            if (collisionHorizontale && !rebondiX) {
+                deplacement.toucherMur();
+                rebondiX = true;
+            } else if (!collisionHorizontale && !rebondiY) {
+                deplacement.toucherPlafond();
+                rebondiY = true;
+            }
         }
     }
 

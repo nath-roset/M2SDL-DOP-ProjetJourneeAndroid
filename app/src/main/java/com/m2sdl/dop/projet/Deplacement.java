@@ -29,7 +29,10 @@ public class Deplacement {
     public boolean estArretee() {
         return dx == 0f && dy == 0f;
     }
-
+    public void appliquerImpulsion(float ix, float iy) {
+        dx += ix;
+        dy += iy;
+    }
     public void toucherMur()     { dx *= -0.8f; }
     public void toucherPlafond() { dy *= -0.8f; }
 

@@ -89,6 +89,7 @@ public class MenuView {
         float btnW = 560f, btnH = 130f, btnR = 65f;
         float yStart = hauteur * 0.56f;
         float yMulti = yStart + 180f;
+        float yPhoto  = yMulti + 180f;  // CAM en dessous de MULTI
 
         float pulseS = (float)Math.sin(Math.toRadians(angle * 3)) * 0.03f + 1f;
         canvas.save();
@@ -100,15 +101,13 @@ public class MenuView {
         drawNeonButton(canvas, cx - btnW/2f, yMulti, btnW, btnH, btnR,
                 Color.rgb(0,180,255), Color.rgb(8,12,28), "MULTIJOUEUR", p);
 
-        float btnPhotoSize = 110f;
-        float btnPhotoX = largeur - btnPhotoSize - 60f;
-        float btnPhotoY = hauteur * 0.88f;
-        drawNeonButton(canvas, btnPhotoX, btnPhotoY, btnPhotoSize, btnPhotoSize, btnPhotoSize/2f,
-                Color.rgb(180, 0, 255), Color.rgb(8,12,28), "CAM", p);
+        drawNeonButton(canvas, cx - btnW/2f, yPhoto, btnW, btnH, btnR,
+                Color.rgb(180,0,255), Color.rgb(8,12,28), "PHOTO", p);
 
         p.setColor(Color.argb(100, 150, 150, 180));
         p.setTextSize(42f);
-        canvas.drawText("Placez la balle puis la sortie", cx, hauteur * 0.85f, p);
+        canvas.drawText("Placez la balle puis la sortie", cx, hauteur * 0.92f, p);
+
     }
 
     private void drawNeonButton(Canvas canvas, float x, float y, float w, float h,
@@ -140,15 +139,13 @@ public class MenuView {
         float btnW = 560f, btnH = 130f;
         float yStart = hauteur * 0.56f;
         float yMulti = yStart + 180f;
-        float btnPhotoSize = 110f;
-        float btnPhotoX = largeur - btnPhotoSize - 60f;
-        float btnPhotoY = hauteur * 0.88f;
+        float yPhoto  = yMulti + 180f;
 
         if (tx > cx-btnW/2f && tx < cx+btnW/2f && ty > yStart && ty < yStart+btnH)
             return TOUCH_START;
         if (tx > cx-btnW/2f && tx < cx+btnW/2f && ty > yMulti && ty < yMulti+btnH)
             return TOUCH_MULTI;
-        if (tx > btnPhotoX && tx < btnPhotoX+btnPhotoSize && ty > btnPhotoY && ty < btnPhotoY+btnPhotoSize)
+        if (tx > cx-btnW/2f && tx < cx+btnW/2f && ty > yPhoto && ty < yPhoto+btnH)
             return TOUCH_PHOTO;
         return TOUCH_AUCUN;
     }
