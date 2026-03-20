@@ -2,127 +2,195 @@ package com.m2sdl.dop.projet;
 
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.DashPathEffect;
 import android.graphics.Paint;
-
+import android.graphics.Path;
 import java.util.List;
 
 public class Balle {
     private int rayon = 20;
-    private float x = rayon + 100;
-    private float y = rayon + 100;
+    private float x = 100;
+    private float y = 350;
     private Deplacement deplacement;
     private int gameViewWidth;
     private int gameViewHeight;
     private List<BoiteDeColision> boites;
 
+    private final Paint paintBalle = new Paint();
+    private final Paint paintTrajectoire = new Paint();
+
     public Balle() {
         this.deplacement = new Deplacement();
+
+        paintBalle.setAntiAlias(true);
+
+        paintTrajectoire.setAntiAlias(true);
+        paintTrajectoire.setColor(Color.argb(180, 255, 255, 255));
+        paintTrajectoire.setStyle(Paint.Style.STROKE);
+        paintTrajectoire.setStrokeWidth(3f);
+        paintTrajectoire.setPathEffect(new DashPathEffect(new float[]{15f, 10f}, 0));
     }
 
     public void update(int gameViewHeight, int gameViewWidth, List<BoiteDeColision> boites) {
         this.gameViewHeight = gameViewHeight;
         this.gameViewWidth  = gameViewWidth;
         this.boites         = boites;
-        calculerDeplacementBalle();
+        if (!deplacement.estArretee()) {
+            calculerDeplacementBalle();
+            deplacement.appliquerFriction();
+        }
+    }
+
+    public void lancer(float angleDeg, float puissance) {
+        deplacement.lancer(angleDeg, puissance);
+    }
+
+    public boolean estArretee() {
+        return deplacement.estArretee();
+    }
+
+    public void dessinerTrajectoire(Canvas canvas, float angleDeg, float puissance) {
+        float simX  = x;
+        float simY  = y;
+        double rad  = Math.toRadians(angleDeg);
+        float simDx = (float)(Math.cos(rad) * puissance);
+        float simDy = (float)(Math.sin(rad) * puissance);
+
+        float porteeMax = rayon * 2 * 8.5f;
+        float distanceParcourue = 0f;
+
+        int maxSteps = 400;
+
+        for (int step = 0; step < maxSteps; step++) {
+
+            float nx = simX + simDx;
+            float ny = simY + simDy;
+
+            boolean rebond = false;
+
+            if (nx - rayon < 0) {
+                nx = rayon; simDx *= -0.8f; rebond = true;
+            } else if (nx + rayon > gameViewWidth) {
+                nx = gameViewWidth - rayon; simDx *= -0.8f; rebond = true;
+            }
+            if (ny - rayon < 0) {
+                ny = rayon; simDy *= -0.8f; rebond = true;
+            } else if (ny + rayon > gameViewHeight) {
+                ny = gameViewHeight - rayon; simDy *= -0.8f; rebond = true;
+            }
+
+            for (BoiteDeColision b : boites) {
+                float ppX = Math.max(b.getBordGauche(), Math.min(nx, b.getBordDroit()));
+                float ppY = Math.max(b.getBordHaut(),   Math.min(ny, b.getBordBas()));
+                float ddx = nx - ppX;
+                float ddy = ny - ppY;
+                if (ddx * ddx + ddy * ddy < (float) rayon * rayon) {
+                    if (Math.abs(ddx) > Math.abs(ddy)) simDx *= -0.8f;
+                    else                               simDy *= -0.8f;
+                    rebond = true;
+                    break;
+                }
+            }
+
+            float stepDist = (float) Math.sqrt(
+                    (nx - simX) * (nx - simX) + (ny - simY) * (ny - simY)
+            );
+            distanceParcourue += stepDist;
+
+            simX = nx;
+            simY = ny;
+
+            float progression = Math.min(distanceParcourue / porteeMax, 1f);
+
+            float rayonPoint = rayon * 0.25f * (1f - progression);
+            int alpha         = (int)(220 * (1f - progression));
+
+            if (rayonPoint > 0.5f && alpha > 5) {
+                Paint p = new Paint();
+                p.setAntiAlias(true);
+                p.setColor(Color.argb(alpha, 10, 10, 10));
+                canvas.drawCircle(simX, simY, rayonPoint, p);
+            }
+
+            simDx *= 0.98f;
+            simDy *= 0.98f;
+
+            if (distanceParcourue >= porteeMax) break;
+            if (Math.abs(simDx) + Math.abs(simDy) < 0.5f) break;
+        }
     }
 
     private void calculerDeplacementBalle() {
         float dx = deplacement.getDeplacementX();
         float dy = deplacement.getDeplacementY();
-        //utile pour ralentir la balle quand elle approche a la prochaine it d'un bloc
-        float tMin = 1f;
-        BoiteDeColision boiteTouchee = null;
-        boolean collisionX = false; // savoir si c'est un mur ou un plafond
 
-        for (BoiteDeColision b : boites) {
-            float[] result = tempsCollision(x, y, dx, dy, b);
-            if (result != null && result[0] < tMin) {
-                tMin         = result[0];
-                boiteTouchee = b;
-                collisionX   = result[1] != 0;
-            }
+        float distance = (float) Math.sqrt(dx * dx + dy * dy);
+        float epaisseurMin = epaisseurMinBoites();
+        float pasMax = Math.min(rayon, epaisseurMin) / 2f;
+        int etapes = (int) Math.ceil(distance / pasMax);
+
+        float stepX = dx / etapes;
+        float stepY = dy / etapes;
+
+        for (int i = 0; i < etapes; i++) {
+            x += stepX;
+            y += stepY;
+            collisionBordEcran();
+            collisionObstacles();
         }
-
-        if (boiteTouchee != null) {
-            float offset = 0.5f;
-            x = x + dx * tMin;
-            y = y + dy * tMin;
-
-            if (collisionX) {
-                x += (deplacement.getDeplacementX() > 0 ? -offset : offset);
-                deplacement.toucherMur();
-            } else {
-                y += (deplacement.getDeplacementY() > 0 ? -offset : offset);
-                deplacement.toucherPlafond();
-            }
-        } else {
-            x += dx;
-            y += dy;
-        }
-
-        collisionBordEcran();
     }
 
-    private float[] tempsCollision(float cx, float cy, float dx, float dy, BoiteDeColision b) {
-        float gauche  = b.getBordGauche() - rayon;
-        float droite  = b.getBordDroit()  + rayon;
-        float haut    = b.getBordHaut()   - rayon;
-        float bas     = b.getBordBas()    + rayon;
-
-        float tEntreeX, tSortieX, tEntreeY, tSortieY;
-
-        if (Math.abs(dx) < 0.001f) {
-            if (cx < gauche || cx > droite) return null;
-            tEntreeX = -Float.MAX_VALUE;
-            tSortieX =  Float.MAX_VALUE;
-        } else {
-            tEntreeX = (gauche - cx) / dx;
-            tSortieX = (droite - cx) / dx;
-            if (tEntreeX > tSortieX) { float t = tEntreeX; tEntreeX = tSortieX; tSortieX = t; }
+    private float epaisseurMinBoites() {
+        float min = rayon;
+        for (BoiteDeColision b : boites) {
+            float largeur = b.getBordDroit() - b.getBordGauche();
+            float hauteur = b.getBordBas()   - b.getBordHaut();
+            min = Math.min(min, Math.min(largeur, hauteur));
         }
+        return Math.max(min, 1f);
+    }
 
-        if (Math.abs(dy) < 0.001f) {
-            if (cy < haut || cy > bas) return null;
-            tEntreeY = -Float.MAX_VALUE;
-            tSortieY =  Float.MAX_VALUE;
-        } else {
-            tEntreeY = (haut - cy) / dy;
-            tSortieY = (bas  - cy) / dy;
-            if (tEntreeY > tSortieY) { float t = tEntreeY; tEntreeY = tSortieY; tSortieY = t; }
+    private void collisionObstacles() {
+        for (BoiteDeColision b : boites) {
+            float plusProcheX = Math.max(b.getBordGauche(), Math.min(x, b.getBordDroit()));
+            float plusProcheY = Math.max(b.getBordHaut(),   Math.min(y, b.getBordBas()));
+            float dx = x - plusProcheX;
+            float dy = y - plusProcheY;
+            float d2 = dx * dx + dy * dy;
+            if (d2 > rayon * rayon) continue;
+            float dist = (float) Math.sqrt(d2);
+            if (dist == 0) continue;
+            float penetration = rayon - dist;
+            x += (dx / dist) * penetration;
+            y += (dy / dist) * penetration;
+            if (Math.abs(dx) > Math.abs(dy)) deplacement.toucherMur();
+            else                              deplacement.toucherPlafond();
         }
-
-        float tEntree = Math.max(tEntreeX, tEntreeY);
-        float tSortie = Math.min(tSortieX, tSortieY);
-
-        if (tEntree > tSortie || tSortie < 0 || tEntree > 1f) return null;
-
-        float t = Math.max(tEntree, 0f);
-        float axeX = (tEntreeX > tEntreeY) ? 1f : 0f;
-
-        return new float[]{ t, axeX };
     }
 
     private void collisionBordEcran() {
         if (x - rayon < 0) {
-            x = rayon;
-            deplacement.toucherMur();
+            x = rayon; deplacement.toucherMur();
         } else if (x + rayon > gameViewWidth) {
-            x = gameViewWidth - rayon;
-            deplacement.toucherMur();
+            x = gameViewWidth - rayon; deplacement.toucherMur();
         }
         if (y - rayon < 0) {
-            y = rayon;
-            deplacement.toucherPlafond();
+            y = rayon; deplacement.toucherPlafond();
         } else if (y + rayon > gameViewHeight) {
-            y = gameViewHeight - rayon;
-            deplacement.toucherPlafond();
+            y = gameViewHeight - rayon; deplacement.toucherPlafond();
         }
     }
 
+    public float getX()    { return x; }
+    public float getY()    { return y; }
+    public int getRayon()  { return rayon; }
+
     public void draw(Canvas canvas) {
-        Paint paint = new Paint();
-        paint.setAntiAlias(true);
-        paint.setColor(Color.rgb(250, 0, 0));
-        canvas.drawCircle(x, y, rayon, paint);
+        paintBalle.setColor(deplacement.estArretee()
+                ? Color.rgb(80, 220, 80)
+                : Color.rgb(250, 60, 60));
+        canvas.drawCircle(x, y, rayon, paintBalle);
     }
+
+
 }

@@ -5,6 +5,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.util.Log;
+import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 
@@ -22,7 +23,10 @@ import java.util.List;
 public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private GameThread thread;
     private Balle balle;
-
+    private float touchStartX, touchStartY;
+    private static final float PUISSANCE_MAX = 30f;
+    private float touchCurrentX, touchCurrentY;
+    private boolean viserEnCours = false;
     private List<BoiteDeColision> boites;
 
     public GameView(Context context) {
@@ -96,18 +100,58 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
      *
      * @param canvas The Canvas to which the View is rendered.
      */
+
+
     @Override
     public void draw(Canvas canvas) {
         super.draw(canvas);
-        if (canvas != null) {
-            canvas.drawColor(Color.WHITE);
+        if (canvas == null) return;
 
-            balle.draw(canvas);
-            for (var b:boites) {
-                b.draw(canvas);
+        canvas.drawColor(Color.WHITE);
+        for (BoiteDeColision b : boites) b.draw(canvas);
 
-            }
-
+        if (viserEnCours && balle.estArretee()) {
+            float deltaX  = touchStartX - touchCurrentX;
+            float deltaY  = touchStartY - touchCurrentY;
+            float distance = (float) Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+            float puissance = Math.min(distance / 20f, PUISSANCE_MAX);
+            float angle = (float) Math.toDegrees(Math.atan2(deltaY, deltaX));
+            balle.dessinerTrajectoire(canvas, angle, puissance);
         }
+
+        balle.draw(canvas);
+    }
+
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        switch (event.getAction()) {
+            case MotionEvent.ACTION_DOWN:
+                if (balle.estArretee()) {
+                    touchStartX   = event.getX();
+                    touchStartY   = event.getY();
+                    touchCurrentX = event.getX();
+                    touchCurrentY = event.getY();
+                    viserEnCours  = true;
+                }
+                break;
+            case MotionEvent.ACTION_MOVE:
+                if (viserEnCours) {
+                    touchCurrentX = event.getX();
+                    touchCurrentY = event.getY();
+                }
+                break;
+            case MotionEvent.ACTION_UP:
+                if (viserEnCours) {
+                    float deltaX  = touchStartX - event.getX();
+                    float deltaY  = touchStartY - event.getY();
+                    float distance = (float) Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+                    float puissance = Math.min(distance / 20f, PUISSANCE_MAX);
+                    float angle = (float) Math.toDegrees(Math.atan2(deltaY, deltaX));
+                    balle.lancer(angle, puissance);
+                    viserEnCours = false;
+                }
+                break;
+        }
+        return true;
     }
 }
