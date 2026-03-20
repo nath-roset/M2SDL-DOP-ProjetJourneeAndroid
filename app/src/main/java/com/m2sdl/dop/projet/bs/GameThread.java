@@ -5,7 +5,7 @@ import android.util.Log;
 import android.view.SurfaceHolder;
 
 import com.m2sdl.dop.projet.Bulborb;
-import com.m2sdl.dop.projet.views.GameView;
+import com.m2sdl.dop.projet.views.*;
 
 public class GameThread extends Thread {
     private final SurfaceHolder surfaceHolder;

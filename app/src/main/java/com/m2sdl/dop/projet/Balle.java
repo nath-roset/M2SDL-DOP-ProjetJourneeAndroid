@@ -15,7 +15,7 @@ public class Balle {
     private int gameViewWidth;
     private int gameViewHeight;
     private List<BoiteDeColision> boites;
-
+    private int couleurJoueur = Color.WHITE;
     private final Paint paintBalle = new Paint();
     private final Paint paintTrajectoire = new Paint();
 
@@ -108,7 +108,7 @@ public class Balle {
             if (rayonPoint > 0.5f && alpha > 5) {
                 Paint p = new Paint();
                 p.setAntiAlias(true);
-                p.setColor(Color.argb(alpha, 10, 10, 10));
+                p.setColor(Color.argb(alpha, 90, 200, 100));
                 canvas.drawCircle(simX, simY, rayonPoint, p);
             }
 
@@ -186,10 +186,29 @@ public class Balle {
     public int getRayon()  { return rayon; }
 
     public void draw(Canvas canvas) {
-        paintBalle.setColor(deplacement.estArretee()
-                ? Color.rgb(80, 220, 80)
-                : Color.rgb(250, 60, 60));
-        canvas.drawCircle(x, y, rayon, paintBalle);
+        Paint p = new Paint();
+        p.setAntiAlias(true);
+
+        if (deplacement.estArretee()) {
+            p.setColor(Color.argb(60, 255, 255, 255));
+            canvas.drawCircle(x, y, rayon * 1.8f, p);
+            p.setColor(couleurJoueur);
+            canvas.drawCircle(x, y, rayon, p);
+        } else {
+            p.setColor(Color.WHITE);
+            canvas.drawCircle(x, y, rayon, p);
+        }
+
+        p.setStyle(Paint.Style.STROKE);
+        p.setStrokeWidth(2f);
+        p.setColor(Color.argb(120, 255, 255, 255));
+        canvas.drawCircle(x, y, rayon, p);
+    }
+
+    public void setCouleur(int couleur) { this.couleurJoueur = couleur; }
+    public void setPosition(float px, float py) {
+        this.x = px;
+        this.y = py;
     }
 
 
