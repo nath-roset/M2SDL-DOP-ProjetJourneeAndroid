@@ -11,14 +11,19 @@ import android.view.SurfaceView;
 import androidx.annotation.NonNull;
 
 import com.m2sdl.dop.projet.Balle;
+import com.m2sdl.dop.projet.BoiteDeColision;
 import com.m2sdl.dop.projet.Bulborb;
 import com.m2sdl.dop.projet.Deplacement;
 import com.m2sdl.dop.projet.bs.GameThread;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private GameThread thread;
     private Balle balle;
 
+    private List<BoiteDeColision> boites;
 
 
 
@@ -28,6 +33,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         thread = new GameThread(getHolder(), this);
         setFocusable(true);
         this.balle = new Balle();
+        this.boites = new ArrayList<>();
+        boites.add(new BoiteDeColision());
     }
 
     @Override
@@ -59,7 +66,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
      * Met à jour l'état de la vue
      */
     public void update() {
-        balle.update(this.getHeight(),this.getWidth());
+        balle.update(this.getHeight(),this.getWidth(),boites);
+
     }
 
     /**
@@ -74,6 +82,10 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             canvas.drawColor(Color.WHITE);
 
             balle.draw(canvas);
+            for (var b:boites) {
+                b.draw(canvas);
+
+            }
 
         }
     }
