@@ -1,6 +1,7 @@
 package com.m2sdl.dop.projet.views;
 
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -16,6 +17,7 @@ import com.m2sdl.dop.projet.EtatJeu;
 import com.m2sdl.dop.projet.Joueur;
 import com.m2sdl.dop.projet.Sortie;
 import com.m2sdl.dop.projet.bs.GameThread;
+import com.m2sdl.dop.projet.utils.GestionCamera;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -38,6 +40,13 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private float touchCurrentX, touchCurrentY;
     private boolean viserEnCours = false;
     private static final float PUISSANCE_MAX = 30f;
+
+    private GestionCamera gestionCamera;
+    private Bitmap bitmap;
+
+    public void setBitmap(Bitmap bitmap) {
+        this.bitmap = bitmap;
+    }
 
     public GameView(Context context) {
         super(context);
@@ -255,6 +264,11 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                         etat = EtatJeu.PLACEMENT_BALLE;
                     } else if (touch == MenuView.TOUCH_MULTI) {
                         initJoueurs(true);
+                        etat = EtatJeu.PLACEMENT_BALLE;
+                    } else if (touch == MenuView.TOUCH_PHOTO) {
+                        // TODO
+                        gestionCamera = new GestionCamera(this);
+                        initJoueurs(false);
                         etat = EtatJeu.PLACEMENT_BALLE;
                     }
                 }
