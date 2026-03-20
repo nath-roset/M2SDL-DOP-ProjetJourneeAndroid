@@ -10,8 +10,8 @@ public class BoiteDeColision {
     private Paint paint = new Paint();
 
 
-    public BoiteDeColision(){
-        rectangle = new Rect(300,500,700,700);
+    public BoiteDeColision(int left,int top, int right, int bottom){
+        rectangle = new Rect(left,top,right,bottom);
         paint.setColor(Color.rgb(0, 0, 250));
     }
 

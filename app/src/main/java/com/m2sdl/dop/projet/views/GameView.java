@@ -25,8 +25,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
     private List<BoiteDeColision> boites;
 
-
-
     public GameView(Context context) {
         super(context);
         getHolder().addCallback(this);
@@ -34,9 +32,32 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         setFocusable(true);
         this.balle = new Balle();
         this.boites = new ArrayList<>();
-        boites.add(new BoiteDeColision());
-    }
+        // Bordures
+        boites.add(new BoiteDeColision(0,   300,  20,   2200)); // gauche
+        boites.add(new BoiteDeColision(880, 300,  900,  2200)); // droite
+        boites.add(new BoiteDeColision(100, 300,  900,  340));  // haut (entrée à gauche 0-100)
+        boites.add(new BoiteDeColision(0,   2160, 800,  2200)); // bas (sortie à droite 800-900)
 
+        // Niveau 1
+        boites.add(new BoiteDeColision(20,  340,  300,  380));  // plafond couloir gauche
+        boites.add(new BoiteDeColision(280, 340,  300,  700));  // mur descente droite
+
+        // Niveau 2
+        boites.add(new BoiteDeColision(20,  700,  450,  740));  // sol gauche
+        boites.add(new BoiteDeColision(450, 700,  900,  740));  // sol droite
+        boites.add(new BoiteDeColision(680, 740,  700,  1100)); // mur descente droite
+
+        // Niveau 3
+        boites.add(new BoiteDeColision(20,  1100, 500,  1140)); // sol gauche
+        boites.add(new BoiteDeColision(480, 1140, 500,  1500)); // mur descente centre
+        boites.add(new BoiteDeColision(500, 1100, 900,  1140)); // sol droite
+        boites.add(new BoiteDeColision(680, 1140, 700,  1500)); // mur descente droite
+
+        // Niveau 4
+        boites.add(new BoiteDeColision(20,  1500, 680,  1540)); // sol long
+        boites.add(new BoiteDeColision(680, 1540, 700,  1900)); // mur descente droite
+        boites.add(new BoiteDeColision(100, 1900, 900,  1940)); // sol final
+    }
     @Override
     public void surfaceChanged(@NonNull SurfaceHolder surfaceHolder, int format, int width, int height) {
 
