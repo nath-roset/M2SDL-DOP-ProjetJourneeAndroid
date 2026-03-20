@@ -10,17 +10,16 @@ import android.view.SurfaceView;
 
 import androidx.annotation.NonNull;
 
+import com.m2sdl.dop.projet.Balle;
 import com.m2sdl.dop.projet.Bulborb;
 import com.m2sdl.dop.projet.Deplacement;
 import com.m2sdl.dop.projet.bs.GameThread;
 
 public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private GameThread thread;
-    private int largeurBalle = 50;
-    private int x = largeurBalle + 100;
-    private int y= largeurBalle + 100;
+    private Balle balle;
 
-    private Deplacement deplacement;
+
 
 
     public GameView(Context context) {
@@ -28,7 +27,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         getHolder().addCallback(this);
         thread = new GameThread(getHolder(), this);
         setFocusable(true);
-        this.deplacement = new Deplacement();
+        this.balle = new Balle();
     }
 
     @Override
@@ -60,14 +59,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
      * Met à jour l'état de la vue
      */
     public void update() {
-        if(x == largeurBalle || x == getWidth()-largeurBalle){
-            deplacement.toucherMur();
-        }
-        if(y == largeurBalle || y == getHeight()-largeurBalle){
-            deplacement.toucherPlafond();
-        }
-        x+= (int) deplacement.getDeplacementX();
-        y+= (int) deplacement.getDeplacementY();
+        balle.update(this.getHeight(),this.getWidth());
     }
 
     /**
@@ -80,9 +72,9 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         super.draw(canvas);
         if (canvas != null) {
             canvas.drawColor(Color.WHITE);
-            Paint paint = new Paint();
-            paint.setColor(Color.rgb(250, 0, 0));
-            canvas.drawCircle(x, y,  50,  paint);
+
+            balle.draw(canvas);
+
         }
     }
 }
