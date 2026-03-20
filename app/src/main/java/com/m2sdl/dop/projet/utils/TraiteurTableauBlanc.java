@@ -11,67 +11,87 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class TraiteurTableauBlanc {
-    private static final Scalar BLEU_BAS  = new Scalar(175, 40, 70);
-    private static final Scalar BLEU_HAUT = new Scalar(270, 100, 100);
-    private static final int SURFACE_MIN  = 500;
 
-    /**
-     * Analyse le bitmap et retourne les boîtes de collision
-     * correspondant aux traits bleus détectés.
-     *
-     * @param bitmap      Photo du tableau blanc
-     * @param viewWidth   Largeur de la GameView (pour mise à l'échelle)
-     * @param viewHeight  Hauteur de la GameView
-     */
+    // Par seuil de luminosité
+    private static final int SEUIL_NOIRCEUR = 60;
+    private static final int SURFACE_MIN = 500;
+
     public static List<BoiteDeColision> detecter(
             Bitmap bitmap, int viewWidth, int viewHeight) {
 
         List<BoiteDeColision> boites = new ArrayList<>();
 
-        // 1. Bitmap → Mat BGR
-        Mat matBgr = new Mat();
-        Utils.bitmapToMat(bitmap, matBgr);
+        // 1. Bitmap (RGBA) → Mat RGBA
+        Mat matRgba = new Mat();
+        Utils.bitmapToMat(bitmap, matRgba);
 
-        // 2. BGR → HSV
-        Mat matHsv = new Mat();
-        Imgproc.cvtColor(matBgr, matHsv, Imgproc.COLOR_BGR2HSV);
+        // 2. RGBA → Niveaux de gris
+        Mat matGris = new Mat();
+        Imgproc.cvtColor(matRgba, matGris, Imgproc.COLOR_RGBA2GRAY);
 
-        // 3. Masque sur la plage bleue
+        // 3. Seuillage inverse
         Mat masque = new Mat();
-        Core.inRange(matHsv, BLEU_BAS, BLEU_HAUT, masque);
+        Imgproc.threshold(matGris, masque,
+                SEUIL_NOIRCEUR,
+                255,
+                Imgproc.THRESH_BINARY_INV);
 
-        // 4. Morphologie : fermeture pour combler les trous dans les traits
+        // 4. Morphologie
         Mat noyau = Imgproc.getStructuringElement(
                 Imgproc.MORPH_RECT, new Size(9, 9));
         Imgproc.morphologyEx(masque, masque, Imgproc.MORPH_CLOSE, noyau);
         Imgproc.morphologyEx(masque, masque, Imgproc.MORPH_DILATE, noyau);
 
-        // 5. Détection des contours
+        // 5. Détection des contours - RETR_LIST au lieu de RETR_EXTERNAL
         List<MatOfPoint> contours = new ArrayList<>();
         Imgproc.findContours(masque, contours,
-                new Mat(), Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_SIMPLE);
+                new Mat(), Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_SIMPLE);
 
-        // 6. Facteurs de mise à l'échelle bitmap → écran
+// 6. Mise à l'échelle
         float scaleX = (float) viewWidth  / bitmap.getWidth();
         float scaleY = (float) viewHeight / bitmap.getHeight();
 
-        // 7. Convertir chaque contour en BoiteDeColision
+// 7. BoiteDeColision — découpage en segments
         for (MatOfPoint contour : contours) {
-            Rect rect = Imgproc.boundingRect(contour);
 
-            if (rect.width * rect.height < SURFACE_MIN) continue;
+            // Ignore les trop petits
+            Rect bBox = Imgproc.boundingRect(contour);
+            if (bBox.width * bBox.height < SURFACE_MIN) continue;
 
-            int left   = (int) (rect.x                * scaleX);
-            int top    = (int) (rect.y                * scaleY);
-            int right  = (int) ((rect.x + rect.width) * scaleX);
-            int bottom = (int) ((rect.y + rect.height)* scaleY);
+            // Approximation polygonale : réduit le contour à ses points clés
+            MatOfPoint2f contour2f = new MatOfPoint2f(contour.toArray());
+            MatOfPoint2f approx2f  = new MatOfPoint2f();
+            double epsilon = 0.01 * Imgproc.arcLength(contour2f, true);
+            Imgproc.approxPolyDP(contour2f, approx2f, epsilon, true);
 
-            boites.add(new BoiteDeColision(left, top, right, bottom));
+            Point[] points = approx2f.toArray();
+
+            // Crée une boîte fine autour de chaque SEGMENT du polygone
+            int epaisseur = 12; // épaisseur des boîtes en pixels écran
+            for (int i = 0; i < points.length; i++) {
+                Point p1 = points[i];
+                Point p2 = points[(i + 1) % points.length];
+
+                int x1 = (int) (Math.min(p1.x, p2.x) * scaleX);
+                int y1 = (int) (Math.min(p1.y, p2.y) * scaleY);
+                int x2 = (int) (Math.max(p1.x, p2.x) * scaleX);
+                int y2 = (int) (Math.max(p1.y, p2.y) * scaleY);
+
+                // Garantit une épaisseur minimale sur chaque axe
+                if (x2 - x1 < epaisseur) { x1 -= epaisseur/2; x2 += epaisseur/2; }
+                if (y2 - y1 < epaisseur) { y1 -= epaisseur/2; y2 += epaisseur/2; }
+
+                boites.add(new BoiteDeColision(x1, y1, x2, y2));
+            }
+
+            contour2f.release();
+            approx2f.release();
         }
 
-        // Libération mémoire
-        matBgr.release(); matHsv.release();
-        masque.release(); noyau.release();
+        matRgba.release();
+        matGris.release();
+        masque.release();
+        noyau.release();
 
         return boites;
     }
